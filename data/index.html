@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>%VERSION%</title>
+  <link href="http://unpkg.com/layui@2.9.7/dist/css/layui.css" rel="stylesheet">
+
+  <style>
+    body {
+        overflow: hidden;
+    }
+    .scrollable-div {
+        height: 400px; /* 设置高度 */
+        overflow: auto; /* 使用 auto 或 scroll */
+        border: 1px solid #ccc; /* 可选，添加边框 */
+    }
+  </style>
+
+</head>
+<body>
+  <h3>型号:%BOARD% IP:%IP% 基于websocket </h3>
+  <form class="layui-form" action=""> 
+  
+<div class="layui-tab layui-tab-brief" lay-filter="test-handle">
+  <ul class="layui-tab-title">
+    <li class="layui-this1" lay-id="11">ws2812灯珠</li>
+    <li lay-id="22">sr04距离感应</li>
+    <li lay-id="33">开关\灯\继电器</li>
+    <li lay-id="44">DHT11温\湿度</li>
+    <li class="layui-this" lay-id="55">OLED</li>
+  </ul>
+  <div class="layui-tab-content">
+    <div class="layui-tab-item layui-show1">
+      说明：GND对<font color="red">GND</font>、VCC对<font color="red">3v3</font>、VIN对<font color="red">针脚</font>
+      <div class="layui-tab-item layui-show">
+        <div class="layui-inline">
+          <label class="layui-form-label">针脚</label>
+          <div class="layui-input-inline">
+            <select id="aPin" lay-search>
+              <option value="4" >D2 GPIO04</option>
+              <option value="14">D5 GPIO14</option>
+              <option value="12">D6 GPIO12</option>
+            </select>
+          </div>
+        </div>
+        <div class="layui-inline">
+          <label class="layui-form-label">灯珠个数</label>
+          <div class="layui-input-inline">
+            <select id="aNum" lay-search>
+              <option value="1"  >1</option>
+              <option value="3"  >3</option>
+              <option value="8"  >8</option>
+              <option value="64" >64</option>
+              <option value="256">256</option>
+            </select>
+          </div>
+        </div>
+  
+        <div class="layui-inline">
+          <label class="layui-form-label">颜色</label>
+          <div class="layui-input-inline">
+            <select id="aColor">
+              <option value="1">红</option>
+              <option value="2">绿</option>
+              <option value="3">蓝</option>
+              <option value="4">黑</option>
+            </select>
+          </div>
+        </div>
+  
+        <div class="layui-inline">
+          <label class="layui-form-label">亮度</label>
+          <div class="layui-input-inline">
+            <select id="aBright" lay-search>
+              <option value="1"  >1</option>
+              <option value="10" >10</option>
+              <option value="20" >20</option>
+              <option value="100">100</option>
+              <option value="255">255</option>
+            </select>
+          </div>
+        </div>  
+      </div>
+  
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button type="button" class="layui-btn" id="btnA">走起</button>
+          <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+      </div>
+
+    </div>
+    
+    <!--------->
+    <div class="layui-tab-item">
+      说明：GND对<font color="red">GND</font>、VCC对<font color="red">3v3</font>、SCL对<font color="red">针脚SCL</font>、SDA对<font color="red">针脚SDA</font>接反就是0.00
+      <div class="layui-tab-item layui-show">
+        <div class="layui-inline">
+          <label class="layui-form-label">针脚SCL</label>
+          <div class="layui-input-inline">
+            <select id="bPinSCL" lay-search>
+              <option value="14">D5 GPIO14</option>
+              <option value="12">D6 GPIO12</option>
+            </select>
+          </div>
+        </div>
+        <div class="layui-inline">
+          <label class="layui-form-label">针脚SDA</label>
+          <div class="layui-input-inline">
+            <select id="bPinSDA" lay-search>
+              <option value="12">D6 GPIO12</option>
+              <option value="14">D5 GPIO14</option>
+            </select>
+          </div>
+        </div>
+      
+      </div>
+  
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button type="button" class="layui-btn" id="btnB">走起</button>
+          <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+      </div>    
+    
+    </div>
+    
+    <!--------->
+    <div class="layui-tab-item">
+      说明：GND对<font color="red">GND</font>、VCC对<font color="red">3v3</font>、VIN对<font color="red">针脚</font>,可以用于一个输出的东西， 比如激光，高低电平有时候会反
+      <div class="layui-tab-item layui-show">
+        <div class="layui-inline">
+          <label class="layui-form-label">针脚</label>
+          <div class="layui-input-inline">
+            <select id="cPin" lay-search>
+              <option value="4" >D2 GPIO04</option>
+              <option value="14">D5 GPIO14</option>
+              <option value="12">D6 GPIO12</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button type="button" class="layui-btn" id="btnC">走起</button>
+          <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+      </div>
+    
+    </div>
+    
+    <!--DHT11-->
+    <div class="layui-tab-item">
+      说明：GND对<font color="red">GND</font>、VCC对<font color="red">3v3</font>、DATA对<font color="red">D2 GPIO4</font>
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button type="button" class="layui-btn" id="btnD">走起多点几次</button>
+        </div>
+      </div>
+    </div>
+    
+    <!--OLED-->
+    <div class="layui-tab-item layui-show">
+      说明：GND对<font color="red">GND</font>、VCC对<font color="red">3v3</font>、SCL对<font color="red">D5 GPIO14</font>、SDA对<font color="red">D6 GPIO12</font>
+      <div class="layui-form-item">
+        <div class="layui-input-block">
+          <button type="button" class="layui-btn" id="btnE">走起</button>
+          <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+        </div>
+      </div>    
+    
+    </div>
+  </div>
+</div>
+<hr>
+
+<div class="layui-input-group">
+  <div class="layui-input-prefix"><h3>调试区</h3></div>
+  <!--
+  <input type="text" class="layui-input" size="30" id="urlWs" value="ws://%IP%/ws">
+  -->
+  <input type="text" class="layui-input" size="30" id="urlWs" value="ws://192.168.123.123/ws">
+
+  <div class="layui-input-suffix">
+    <button type="button" class="layui-btn" id="btnWs"   >切换ws</button>
+    <button type="button" class="layui-btn" id="btnClear">清理调试区</button>
+  </div>
+
+  ws://192.168.123.123/ws
+
+</div>
+
+<div style="overflow-y: auto;flex: 1;height:200px" id="mmo">
+</div>
+</form>
+  
+<script src="http://unpkg.com/layui@2.9.7/dist/layui.js"></script>
+<script>
+var mainurl = 'http://%IP%/';
+var mainurl = 'http://192.168.123.123/'; //正式版注释
+
+layui.use(function(){
+  var $ = layui.$;
+  var form = layui.form;
+  var layer = layui.layer;  
+  var socket = '';
+  var isConn = 0;
+
+  /////////////////
+  //调试区-------
+  $('#btnClear').on('click', function(){
+    //layer.msg('点击未设置特定属性的按钮不会触发组件的提交事件');
+    //document.getElementById("mmo").innerHTML = "";
+    $('#mmo').empty();
+  });
+
+  function info(str){
+    //document.getElementById('mmo')
+
+    $("#mmo").append(str+'<br>');
+    var objDiv = document.getElementById("mmo");
+    objDiv.scrollTop = objDiv.scrollHeight;
+  }
+
+  //发送消息给websocket
+  function send(str){
+    socket.send(str);
+    info('<font color="green">发送消息：' + str + '</font>');
+  }
+
+  //端口后启动websocket
+  function restartWs(){
+    if(isConn==1) socket.close();
+
+    wsUrl = $('#urlWs').val();
+    socket = new WebSocket(wsUrl);
+  //websocket
+  //var socket = new WebSocket($('#urlWs').val());
+  //var socket = new WebSocket('ws://124.222.224.186:8800');
+  //var socket = new WebSocket('ws://192.168.123.123/ws');
+
+
+    // 监听连接打开事件
+    socket.onopen = function(event) {
+      info('WebSocket 连接已建立');
+      isConn = 1;
+    };
+
+    // 监听收到消息事件
+    socket.onmessage = function(event) {
+      info('<font color="blue">收到消息：' + event.data + '</font>');
+    };
+
+    // 监听连接关闭事件
+    socket.onclose = function(event) {
+      info('WebSocket 连接已关闭');
+      isConn = 0;
+    };
+
+
+  }
+
+  //////////////////////////////////////
+  //ws2812
+  $('#btnA').on('click', function(){
+    if(isConn == 0){
+      layer.msg('未连接websocket');
+    }else{
+      var aPin   =$('#aPin').val();
+      var aNum   =$('#aNum').val();
+      var aColor =$('#aColor').val();
+      var aBright=$('#aBright').val();
+      send('ws2812|'+aPin+'|'+aNum+'|'+aColor+'|'+aBright);
+    }
+  });
+  
+  //sr04
+  $('#btnB').on('click', function(){
+    if(isConn == 0){
+      layer.msg('未连接websocket');
+    }else{
+      var bPinSCL   =$('#bPinSCL').val();
+      var bPinSDA   =$('#bPinSDA').val();
+      send('sr04|'+bPinSCL+'|'+bPinSDA);
+    }
+  });
+  
+  //switch
+  var cOn = 0;
+  $('#btnC').on('click', function(){
+    if(isConn == 0){
+      layer.msg('未连接websocket');
+    }else{
+      if(cOn == 0) {
+        cOn = 1;
+      }else{
+        cOn = 0;
+      }
+      var cPin   =$('#cPin').val();
+      send('switch|'+cPin+'|'+cOn);
+    }
+  });
+  
+  
+  //dht11
+  $('#btnD').on('click', function(){
+    $.ajax({
+      url: mainurl + 'dht',
+      type: 'GET',
+      success: function(response){
+        info('<font color="blue">收到消息：' + response + '</font>');
+      },
+      error: function(xhr, status, error){
+        // 请求失败时的处理
+        layui.use('layer', function(){
+          var layer = layui.layer;
+          layer.msg('GET请求失败：' + error);
+        });
+      }
+    });
+  });
+  
+  
+  //OLED
+  $('#btnE').on('click', function(){
+    $.ajax({
+      url: mainurl + 'oled' ,  // 替换成你的后端接口地址
+      type: 'GET',
+      success: function(response){
+        info('<font color="blue">收到消息：' + response + '</font>');
+      },
+      error: function(xhr, status, error){
+        // 请求失败时的处理
+        layui.use('layer', function(){
+          var layer = layui.layer;
+          layer.msg('GET请求失败：' + error);
+        });
+      }
+    });
+  });
+
+  $('#btnWs').on('click', function(){
+      restartWs();
+  });
+
+
+  //info('asdf');
+
+});
+</script>
+
+</body>
+</html>

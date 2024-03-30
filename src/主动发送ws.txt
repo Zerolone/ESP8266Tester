@@ -1,0 +1,63 @@
+/*未验证*/
+#include <ESPAsyncWebServer.h>
+
+AsyncWebServer server(80);
+
+// 用于存储客户端连接
+AsyncWebSocketClient *clientConnection = nullptr;
+
+// WebSocket事件处理函数
+void onWebSocketEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type, void *arg, uint8_t *data, size_t len) {
+  if (type == AWE_CONNECT) {
+    // 当有客户端连接时，将连接对象存储在全局变量中
+    clientConnection = client;
+    Serial.println("WebSocket Client Connected");
+  } else if (type == AWE_DISCONNECT) {
+    // 当客户端断开连接时，清除连接对象
+    clientConnection = nullptr;
+    Serial.println("WebSocket Client Disconnected");
+  } else if (type == AWE_TEXT) {
+    // 当接收到客户端发来的文本消息时
+    // 这里可以处理客户端的消息
+    Serial.print("Received Text: ");
+    Serial.println((char*)arg);
+  } else if (type == AWE_BINARY) {
+    // 当接收到客户端发来的二进制消息时
+    // 这里可以处理客户端消息
+    Serial.println("Received Binary Data");
+  } else if (type == AWE_PING) {
+    // 客户端发送了Ping消息，可以选择回复Pong
+    client->pong();
+  }
+}
+
+// WebSocket消息处理函数
+void onWebSocketMessage(AsyncWebSocketClient *client, void *arg, uint8_t *data, size_t len) {
+  // 在这里处理从客户端接收到的消息
+  // ...
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  // 添加WebSocket路径和处理函数
+  server.addWebSocketHandler("/ws", onWebSocketEvent, onWebSocketMessage);
+
+  // 开始服务器
+  server.begin();
+}
+
+void loop() {
+  // 如果有客户端连接，并且需要主动发送数据
+  if (clientConnection) {
+    // 发送文本消息给客户端
+    clientConnection->text("Hello from server!");
+
+    // 或者发送二进制消息
+    // uint8_t binaryData[] = {0x01, 0x02, 0x03, 0x04};
+    // clientConnection->binary(binaryData, sizeof(binaryData));
+  }
+
+  // 服务器处理其他任务
+  server.handleClient();
+}
