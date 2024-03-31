@@ -5,18 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>%VERSION%</title>
   <link href="http://unpkg.com/layui@2.9.7/dist/css/layui.css" rel="stylesheet">
-
-  <style>
-    body {
-        overflow: hidden;
-    }
-    .scrollable-div {
-        height: 400px; /* 设置高度 */
-        overflow: auto; /* 使用 auto 或 scroll */
-        border: 1px solid #ccc; /* 可选，添加边框 */
-    }
-  </style>
-
+  <link href="index.css" rel="stylesheet">
 </head>
 <body>
   <h3>型号:%BOARD% IP:%IP% 基于websocket </h3>
@@ -195,11 +184,25 @@
 <div style="overflow-y: auto;flex: 1;height:200px" id="mmo">
 </div>
 </form>
+
+
+<div id="bottom-div" onclick="showAlert()">
+  中技云第十波
+</div>
   
 <script src="http://unpkg.com/layui@2.9.7/dist/layui.js"></script>
 <script>
+function showAlert() {
+  if (confirm("是否要重置重新配网？")) {
+    // 用户点击了“确定”按钮
+    window.location.href = "reset";
+    } else {
+      // 用户点击了“取消”按钮
+  }
+}
+
 var mainurl = 'http://%IP%/';
-var mainurl = 'http://192.168.123.123/'; //正式版注释
+//var mainurl = 'http://192.168.123.123/'; //正式版注释
 
 layui.use(function(){
   var $ = layui.$;
@@ -350,6 +353,8 @@ layui.use(function(){
 
 });
 </script>
+
+
 
 </body>
 </html>
