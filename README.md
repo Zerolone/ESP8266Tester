@@ -14,7 +14,7 @@
 ----
 ##Here's the English translation by deepl
 
-# used to test whether the modules of the Esp8266 are working properly.
+# used to test the modules of the Esp8266 are working properly by web page
 ## Currently the modules that can be tested are:
 ### 1, ws2812, you can test multiple lights lit, color, brightness
 ### 2, sr04 distance sensing module
