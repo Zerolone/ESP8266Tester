@@ -12,7 +12,7 @@
 
 ## 下面是deepl翻译的英文
 ----
-##Here's the English translation by deepl
+## Here's the English translation by deepl
 
 # used to test the modules of the Esp8266 are working properly by web page
 ## Currently the modules that can be tested are:
@@ -22,16 +22,20 @@
 ### 4、DHT11 temperature and humidity
 ### 5, OLED display, display Chinese
 
-![配网页面](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/0.jpg)
 ### 配网页面
+![配网页面](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/0.jpg)
 
-![1.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/1.jpg)
 ### ws2812 设置
+![1.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/1.jpg)
 
+### sr04 设置
 ![2.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/2.jpg)
 
+### 开关、灯、继电器等
 ![3.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/3.jpg)
 
+### DHT11温湿度
 ![4.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/4.jpg)
 
+### OLED
 ![5.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/5.jpg)
