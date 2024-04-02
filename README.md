@@ -41,3 +41,6 @@
 
 ### OLED
 ![5.jpg](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/5.jpg)
+
+### IR 红外线
+![6.png](https://raw.githubusercontent.com/Zerolone/ESP8266Tester/main/screenshot/6.png)

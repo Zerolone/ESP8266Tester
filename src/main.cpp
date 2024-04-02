@@ -1,6 +1,3 @@
-const char* VERSION = "1.0.1 LOCAL";
-
-////////////////////////////////////////////
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
@@ -10,7 +7,6 @@ const char* VERSION = "1.0.1 LOCAL";
 #include <ESP8266httpUpdate.h>
 
 #include <PubSubClient.h>
-
 
 //DHT部分
 #include <DHT.h>
@@ -24,289 +20,38 @@ DHT dht(DHTPIN, DHTTYPE);  // 创建DHT对象
 String dhtInfo = "";
 int    dhtRun  = 0;
 
-//
+//OLED
 #include <U8g2lib.h>
 int    oledRun = 0;
 
+//红外遥控
+#include <IRremoteESP8266.h> // 引入 IRremoteESP8266 库
+#include <IRrecv.h>  // 引入 IRrecv 类
+#include <IRutils.h> // 引入 IRutils 工具类
+
+// 定义红外接收模块连接的引脚
+const int ir_recv_pin = D2;
+IRrecv irrecv(ir_recv_pin); // 创建 IRrecv 对象
+decode_results results;     // 创建 decode_results 对象
+
 /*测试部分*/
+/*测试部分-结束*/
 
 //自定义lib-----------------------------------
-#include "lib/myFunc.h"
+#include "lib/ws2812.h"
+#include "lib/sr04.h"
+#include "lib/switch.h"
+#include "lib/oled.h"
+
+//变量
+#include "common.h"
+
+//函数
+#include "func.h"
 //-------------------------------------------
-//GPIO口
-const int ledPin   = 2;
-const int lightPIN = D2;
-
-//LED状态
-String ledState;
-
-boolean restart = false;
-
-int intReset = 0;
-int intReal  = 0;
-
-//是否休眠
-int canTest = 0;
-
-//
-#ifdef BOARD_TYPE
-    #if BOARD_TYPE == ESP01S
-        const char* BOARD   = "ESP01S";
-    #elif BOARD_TYPE == ESP8266
-        const char* BOARD   = "ESP8266";
-    #else
-        const char* BOARD "未知";
-    #endif
-#else
-    const char* BOARD   = "未定义";
-#endif
-
-#define intSerial 115200\
-
-WiFiClient espClient;
-PubSubClient client(espClient);
-
-//启用webserver
-AsyncWebServer server(80);
-AsyncWebSocket ws("/ws");    // WebSocket对象，url为/
-
-//OTA 在线更新
-const char* OTAURL   = "/esp8266.bin";
-const char* OTAFSURL = "/esp8266fs.bin";
-
-//常用的输入框
-const char* PARAM_INPUT_1 = "ssid";
-const char* PARAM_INPUT_2 = "pass";
-const char* PARAM_INPUT_3 = "ip";
-const char* PARAM_INPUT_4 = "gateway";
-const char* PARAM_INPUT_5 = "UserKey";
-const char* PARAM_INPUT_6 = "otahost";
-
-const char* PARAM_INPUT_7 = "Location";
-const char* PARAM_INPUT_8 = "BILIBILI_UID";
-const char* PARAM_INPUT_9 = "intBright";
-
-//可以通过webserver修改的内容
-String ssid;
-String pass;
-String ip;
-String gateway;
-String ota;
-String otahost;
-String checkid;
-String UserKey;       // 和风天气API私钥 https://dev.heweather.com/docs/start/ 需要自行申请
-String Location;      // 和风天气城市代码 https://github.com/qwd/LocationList/blob/master/China-City-List-latest.csv Location_ID 需要自行查询
-String BILIBILI_UID;  // B站用户ID
-String intBright;     // 亮度
-String MType;         // 矩阵类型
-
-//临时变量
-char buffer[20];
-
-//文件保存路径
-const char* ssidPath    = "/ssid.txt"; 
-const char* passPath    = "/pass.txt";
-const char* ipPath      = "/ip.txt";
-const char* gatewayPath = "/gateway.txt";
-const char* otaPath     = "/ota.txt";
-const char* otahostPath = "/otahost.txt";
-
-const char* UserKeyPath      = "/UserKey.txt";
-const char* LocationPath     = "/Location.txt";
-const char* BILIBILI_UIDPath = "/BILIBILI_UID.txt";
-const char* intBrightPath    = "/intBright.txt";
-
-IPAddress localIP;
-IPAddress localGateway;
-IPAddress subnet(255, 255, 255, 0);
-
 
 
 //////////////////////////////
-//初始化littlefs
-void initFS() {
-  if (!LittleFS.begin()) {
-    Serial.println("LittleFS Mount Err");
-  }
-  else{
-    Serial.println("LittleFS mounted Succ");
-  }
-}
-
-//写文件内容
-void writeFile(fs::FS &fs, const char * path, const char * message){
-  Serial.printf("Writing file: %s\r\n", path);
-
-  File file = fs.open(path, "w");
-  if(!file){
-    Serial.println("- failed to open file for writing");
-    return;
-  }
-  if(file.print(message)){
-    Serial.println("- file written");
-  } else {
-    Serial.println("- frite failed");
-  }
-  
-  file.close();
-}
-
-//读取文件内容
-String readFile(fs::FS &fs, const char * path){
-  Serial.printf("Reading file: %s\r\n", path);
-
-  File file = fs.open(path, "r");
-  if(!file || file.isDirectory()){
-    Serial.println("- failed to open file for reading");
-    return String();
-  }
-
-  String fileContent;
-  while(file.available()){
-    fileContent = file.readStringUntil('\n');
-    break;
-  }
-  file.close();
-  return fileContent;
-}
-
-//////////////////////////////
-//OTA 在线更新部分
-void update_started() {
-  Serial.println("CALLBACK:  HTTP update process started");
-}
-
-void update_finished() {
-  Serial.println("CALLBACK:  HTTP update process finished");
-}
-
-void update_progress(int cur, int total) {
-  Serial.printf("CALLBACK:  HTTP update process at %d of %d bytes...\n", cur, total);
-}
-
-void update_error(int err) {
-  Serial.printf("CALLBACK:  HTTP update fatal error code %d\n", err);
-}
-
-void updateOTA() {
-  ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
-
-    // Add optional callback notifiers
-    ESPhttpUpdate.onStart(update_started);
-    ESPhttpUpdate.onEnd(update_finished);
-    ESPhttpUpdate.onProgress(update_progress);
-    ESPhttpUpdate.onError(update_error);
-    ESPhttpUpdate.rebootOnUpdate(false); // remove automatic update
-      
-    t_httpUpdate_return ret = ESPhttpUpdate.update(espClient, otahost + OTAURL);
-
-    writeFile(LittleFS, otaPath, "0");
-
-    switch (ret) {
-      case HTTP_UPDATE_FAILED: Serial.printf("HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str()); break;
-      case HTTP_UPDATE_NO_UPDATES: Serial.println("HTTP_UPDATE_NO_UPDATES"); break;
-      case HTTP_UPDATE_OK: Serial.println("HTTP_UPDATE_OK"); break;
-    }  
-}
-
-void updateOTAFS() {
-  ESPhttpUpdate.setLedPin(LED_BUILTIN, LOW);
-
-  // Add optional callback notifiers
-  ESPhttpUpdate.onStart(update_started);
-  ESPhttpUpdate.onEnd(update_finished);
-  ESPhttpUpdate.onProgress(update_progress);
-  ESPhttpUpdate.onError(update_error);
-  ESPhttpUpdate.rebootOnUpdate(false); // remove automatic update
-  
-  t_httpUpdate_return ret = ESPhttpUpdate.updateFS(espClient, otahost + OTAFSURL);
-  writeFile(LittleFS, ssidPath,         ssid.c_str());
-  writeFile(LittleFS, passPath,         pass.c_str());
-  writeFile(LittleFS, ipPath,           ip.c_str());
-  writeFile(LittleFS, gatewayPath,      gateway.c_str());
-  writeFile(LittleFS, otaPath,          "0");
-  writeFile(LittleFS, otahostPath,      otahost.c_str());
-  writeFile(LittleFS, UserKeyPath,      UserKey.c_str());
-  writeFile(LittleFS, LocationPath,     Location.c_str());
-  writeFile(LittleFS, BILIBILI_UIDPath, BILIBILI_UID.c_str());
-
-  switch (ret) {
-    case HTTP_UPDATE_FAILED: Serial.printf("FS HTTP_UPDATE_FAILD Error (%d): %s\n", ESPhttpUpdate.getLastError(), ESPhttpUpdate.getLastErrorString().c_str()); break;
-    case HTTP_UPDATE_NO_UPDATES: Serial.println("FS HTTP_UPDATE_NO_UPDATES"); break;
-    case HTTP_UPDATE_OK: Serial.println("FS HTTP_UPDATE_OK"); break;
-  }  
-}
-
-//////////////////////////////
-// 初始化WIFI
-bool initWiFi() {
-  if(ssid=="" || ip==""){
-    Serial.println("Undefined SSID or IP address.");
-    return false;
-  }
-
-  WiFi.mode(WIFI_STA);
-  localIP.fromString(ip.c_str());
-  localGateway.fromString(gateway.c_str());
-
-  if (!WiFi.config(localIP, localGateway, subnet)){
-    Serial.println("STA Failed to configure");
-    return false;
-  }
-  WiFi.begin(ssid.c_str(), pass.c_str());
-
-  Serial.println("Connecting to WiFi...");
-
-  int intLoop = 0;
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.println("Connecting to WiFi...");
-
-    intLoop+=1;
-    if(intLoop > 40){
-      Serial.println("Failed to connect.");
-      return false;
-    }
-  }
-  
-  /**
-  delay(20000);
-  if(WiFi.status() != WL_CONNECTED) {
-    Serial.println("Failed to connect.");
-    
-    return false;
-  }
-  /**/
-
-  Serial.println(WiFi.localIP());
-  return true;
-}
-
-// 显示到网页各种效果
-String processor(const String& var) {
-  //Serial.println(var);
-
-  if(var == "STATE") {
-    if(!digitalRead(ledPin)) {
-      ledState = "开";
-    }
-    else {
-      ledState = "关";
-    }
-    return ledState;
-  }
-
-  if(var == "UserKey")      return UserKey;
-  if(var == "Location")     return Location;
-  if(var == "BILIBILI_UID") return BILIBILI_UID;
-  if(var == "intBright")    return intBright;
-  if(var == "VERSION")      return VERSION;
-  if(var == "BOARD")        return BOARD;
-  if(var == "OTAHOST")      return otahost;
-  if(var == "IP")           return ip.c_str();
-  
-  return String();
-}
 
 void getDHT(){
   DHT dht(4, DHT11);
@@ -345,83 +90,73 @@ void getOLED(){
 void setup() {
   Serial.begin(intSerial);  
 
-  /*测试*
-  dht.begin();           // 初始化DHT传感器
-  /*测试结束*/
+  /*测试部分*/
+  /*测试部分-结束*/
 
   //初始化littleFS
   initFS();
 
-  //主板灯
-  pinMode(ledPin, OUTPUT);
+  //---------------------------
+  //从LittleFS读取内容 系统配置
+  strTmp  = readFile(LittleFS, sysPath);
   
-  //从LittleFS读取内容
-  ssid    = readFile(LittleFS, ssidPath);
-  pass    = readFile(LittleFS, passPath);
-  ip      = readFile(LittleFS, ipPath);
-  gateway = readFile(LittleFS, gatewayPath);
-  ota     = readFile(LittleFS, otaPath);
-  otahost = readFile(LittleFS, otahostPath);
+  int count = 1;
+  int i = 0;
+  for (i = 0; i < strTmp.length(); i++) {
+      if (strTmp.charAt(i) == '|') {
+          count++; // 遇到分隔符，计数器递增
+      }
+  }  
+  
+  char charArray[strTmp.length() + 1];
+  strTmp.toCharArray(charArray, sizeof(charArray));
 
-  UserKey      = readFile(LittleFS, UserKeyPath);
-  Location     = readFile(LittleFS, LocationPath);
-  BILIBILI_UID = readFile(LittleFS, BILIBILI_UIDPath);
-  intBright    = readFile(LittleFS, intBrightPath);
+  // 使用strtok函数将字符串按照 | 分割，并存储到变量中
+  char* token = strtok(charArray, "|");
+  char* tokens[count];
+  
+  i = 0;
+  while (token != NULL && i < count) {
+      tokens[i++] = token;
+      token = strtok(NULL, "|");
+  }
 
-  Serial.println(ssid);
-  Serial.println(pass);
-  Serial.println(ip);
-  Serial.println(gateway);
-  Serial.println(ota);
-  Serial.println(otahost);
-  Serial.println(UserKey);
-  Serial.println(Location);
+  ssid    = tokens[0];
+  pass    = tokens[1];
+  ip      = tokens[2];
+  gateway = tokens[3];
+  ota     = tokens[4];
+  otahost = tokens[5];
+  checkid = tokens[6];
 
-
-  Serial.print("BILIBILI_UID=");
-  Serial.println(BILIBILI_UID);
-
-  Serial.print("intBright=");
-  Serial.println(intBright);
-
+  sinfo("ssid=",    ssid);
+  sinfo("pass=",    pass);
+  sinfo("ip=",      ip);
+  sinfo("gateway=", gateway);
+  sinfo("ota=",     ota);
+  sinfo("otahost=", otahost);
+  sinfo("checkid=", checkid);
   //
   server.serveStatic("/", LittleFS, "/");
-
-  // 拉低
-  server.on("/on", HTTP_GET, [](AsyncWebServerRequest *request) {
-    digitalWrite(ledPin, LOW);
-    request->send(LittleFS, "/index.html", "text/html", false, processor);
-  });
-
-  // 拉高
-  server.on("/off", HTTP_GET, [](AsyncWebServerRequest *request) {
-    digitalWrite(ledPin, HIGH);
-    request->send(LittleFS, "/index.html", "text/html", false, processor);
-  });
 
   //搜索网络
   Serial.println("Search Wifi");
   ///////////////
   if(initWiFi()) {
 
-    // Route for root / web page
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
       request->send(LittleFS, "/index.html", "text/html", false, processor);
     });    
 
-    // Route to set GPIO state to LOW
     server.on("/autofs", HTTP_GET, [](AsyncWebServerRequest *request) {
-      digitalWrite(ledPin, HIGH);
+      sinfo("begin ota fs", OTAFSURL);
 
-      Serial.println("begin ota fs");
-      Serial.println(OTAFSURL);
+      //到时候改成websocket方式
+      ws.textAll("开始 OTA FS");
+      
+      ota = "2";
+      writeFile(LittleFS, "sys");
 
-      request->send(200, "text/html", "begin ota fs");
-      
-      writeFile(LittleFS, otaPath, "2");
-      
-      //zpost("OTAFS 升级");
-      //updateOTAFS();
       ESP.restart();
     });
     
@@ -429,58 +164,15 @@ void setup() {
     server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request) {
       request->send(200, "text/html", "<script>alert('重启中，请5秒后刷新当前页面。');</script>");
       
-      //zpost("OTA 升级");
       ESP.restart();
     });
     
     // 重置
     server.on("/reset", HTTP_GET, [](AsyncWebServerRequest *request) {
       ssid = "";
-      writeFile(LittleFS, ssidPath, ssid.c_str());
+      writeFile(LittleFS, "sys");
       ESP.restart();      
       
-      request->send(LittleFS, "/index.html", "text/html", false, processor);
-    });
-
-    /**/
-    server.on("/checkid", HTTP_POST, [](AsyncWebServerRequest *request){
-      // 获取提交表单的内容
-      if (request->hasArg("UserKey")) {
-        UserKey = request->arg("UserKey");
-
-        writeFile(LittleFS, UserKeyPath, UserKey.c_str());
-
-        Serial.print("UserKey: ");
-        Serial.println(UserKey);
-      }
-      
-      if (request->hasArg("Location")) {
-        Location = request->arg("Location");
-
-        writeFile(LittleFS, LocationPath, Location.c_str());
-
-        Serial.print("Location: ");
-        Serial.println(Location);
-      }
-
-      if (request->hasArg("BILIBILI_UID")) {
-        BILIBILI_UID = request->arg("BILIBILI_UID");
-
-        writeFile(LittleFS, BILIBILI_UIDPath, BILIBILI_UID.c_str());
-
-        Serial.print("BILIBILI_UID: ");
-        Serial.println(BILIBILI_UID);
-      }
-
-      //intBright 亮度
-      if (request->hasArg("intBright")) {
-        intBright = request->arg("intBright");
-        writeFile(LittleFS, intBrightPath, intBright.c_str());
-
-        Serial.print("intBright: ");
-        Serial.println(intBright);
-      }
-
       request->send(LittleFS, "/index.html", "text/html", false, processor);
     });
 
@@ -488,24 +180,19 @@ void setup() {
       // 获取提交表单的内容
       if (request->hasArg("otahost")) {
         otahost = request->arg("otahost");
-      
-        writeFile(LittleFS, otahostPath, otahost.c_str());
+        writeFile(LittleFS, "sys");
 
-        Serial.print("otahost: ");
-        Serial.println(otahost);
+        sinfo("otahost: ", otahost);
       }
   
-      request->send(LittleFS, "/index.html", "text/html", false, processor);
+      request->send(200, "text/html",  "<script>alert('修改OTA地址完毕，可以点击重启之后，看看是否生效。')</script>");
     });
 
     //DHT11通过http请求
     server.on("/dht", HTTP_GET, [](AsyncWebServerRequest *request){
-      //delay(1000);
-      //getDHT();
-
       dhtRun = 1;
 
-      Serial.println(dhtInfo);
+      sinfo(dhtInfo);
 
       AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", dhtInfo);
       response->addHeader("Access-Control-Allow-Origin", "*");
@@ -516,19 +203,19 @@ void setup() {
       //request->send(200, "text/plain", dhtInfo);
     });
 
-
     //DHT11通过http请求
     server.on("/oled", HTTP_GET, [](AsyncWebServerRequest *request){
-      //delay(1000);
-      //getOLED();
       oledRun = 1;
 
+      //跨域
       AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "看看是否显示");
       response->addHeader("Access-Control-Allow-Origin", "*");
       response->addHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
       response->addHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
       request->send(response);      
-    });    
+    });
+
+
     
     server.begin();
     canTest = 1;
@@ -536,65 +223,32 @@ void setup() {
     ///////////
     // 初始化OTA
     
-    if(ota == "1"){
-      updateOTA();
-      writeFile(LittleFS, otaPath, "0");
+    if(ota == "1") updateOTA();
+    if(ota == "2") updateOTAFS();
+
+    if(ota == "1" || ota == "2"){
+      ota = 0;
+      writeFile(LittleFS, "sys");
       ESP.restart();
     }
     
-    if(ota == "2"){
-      updateOTAFS();
-      writeFile(LittleFS, otaPath, "0");
-      ESP.restart();
-    }
-
-    Serial.println(VERSION);
-    Serial.println(BOARD);
+    sinfo(BOARD, VERSION);
 
     /////////////
     //搜索到
     Serial.println("Search Wifi Succ");
-
-    //解析时间
-    //solveTime();
-    //updateAllData();
-    //updateTimeTask.attach(updatePeriod * 60, updateTime); //更新时间
-    //scheTask.attach(1, scheTime);
-
-    /////////////
   } else {
-    // Connect to Wi-Fi network with SSID and password
-    Serial.println("Setting AP (Access Point)");
+    sinfo("Setting AP (Access Point)");
     
-    // 获取当前时间戳
-    unsigned long currentTimestamp = millis(); // 获取当前时间戳的毫秒数部分
-  
-    // 提取时间戳的后3位数字
-    unsigned int lastThreeDigits = currentTimestamp % 1000;
-  
-    // 生成随机数
-    int randomNum = random(1000);
-  
-    // 将时间戳的后3位和随机数拼接成一个字符串
-    char result[15];
-    sprintf(result, "ZJY-%d-%03u", randomNum, lastThreeDigits);
+    //ap名
+    strTmp = "ZJY-" + String(ESP.getChipId());
+    WiFi.softAP(strTmp, "123456");
 
-    //WiFi.softAP("ZJY-NINTH", NULL);
-    WiFi.softAP(result, NULL);
-
-    IPAddress IP = WiFi.softAPIP();
-    char* ipStr = new char[16];
-    sprintf(ipStr, "%d.%d.%d.%d", IP[0], IP[1], IP[2], IP[3]);
-    
-    delay(2000);
-    Serial.print("AP IP address: ");
-    Serial.println(IP); 
-
-    // Web Server Root URL
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
       request->send(LittleFS, "/wifimanager.html", "text/html");
     });
 
+    //直连
     server.on("/c", HTTP_GET, [](AsyncWebServerRequest *request) {
       request->send(LittleFS, "/index.html", "text/html", false, processor);
     });    
@@ -602,94 +256,31 @@ void setup() {
     server.serveStatic("/", LittleFS, "/");
     
     server.on("/", HTTP_POST, [](AsyncWebServerRequest *request) {
-      int params = request->params();
-      for(int i=0;i<params;i++){
-        AsyncWebParameter* p = request->getParam(i);
-        if(p->isPost()){
-          if (p->name() == PARAM_INPUT_1) {
-            ssid = p->value().c_str();
-            Serial.print("SSID set to: ");
-            Serial.println(ssid);
-            writeFile(LittleFS, ssidPath, ssid.c_str());
-          }
+      if (request->hasArg("ssid"))    ssid    = request->arg("ssid");
+      if (request->hasArg("pass"))    pass    = request->arg("pass");
+      if (request->hasArg("ip"))      ip      = request->arg("ip");
+      if (request->hasArg("gateway")) gateway = request->arg("gateway");
+      if (request->hasArg("checkid")) checkid = request->arg("checkid");
+      writeFile(LittleFS, "sys");
 
-          if (p->name() == PARAM_INPUT_2) {
-            pass = p->value().c_str();
-            Serial.print("Password set to: ");
-            Serial.println(pass);
-            writeFile(LittleFS, passPath, pass.c_str());
-          }
+      request->send(200, "text/html",  "<html><meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/><body><h1>写入完毕，重启中，修改后的IP为：<a href='http://"+ip+"'>"+ip+" 点击直达</a></h1></body></html>");
 
-          if (p->name() == PARAM_INPUT_3) {
-            ip = p->value().c_str();
-            Serial.print("IP Address set to: ");
-            Serial.println(ip);
-            writeFile(LittleFS, ipPath, ip.c_str());
-          }
-
-          if (p->name() == PARAM_INPUT_4) {
-            gateway = p->value().c_str();
-            Serial.print("Gateway set to: ");
-            Serial.println(gateway);
-            writeFile(LittleFS, gatewayPath, gateway.c_str());
-          }
-
-          //
-          writeFile(LittleFS, otaPath, "0");
-
-          if (p->name() == PARAM_INPUT_6) {
-            otahost = p->value().c_str();
-            Serial.print("otahost set to: "); 
-            Serial.println(otahost);
-            writeFile(LittleFS, otahostPath, otahost.c_str());
-          }          
-
-          if (p->name() == PARAM_INPUT_5) {
-            UserKey = p->value().c_str();
-            Serial.print("UserKey set to: "); 
-            Serial.println(UserKey);
-            writeFile(LittleFS, UserKeyPath, UserKey.c_str());
-          }
-
-          if (p->name() == PARAM_INPUT_7) {
-            Location = p->value().c_str();
-            Serial.print("Location set to: "); 
-            Serial.println(Location);
-            writeFile(LittleFS, LocationPath, Location.c_str());
-          }
-
-          if (p->name() == PARAM_INPUT_8) {
-            BILIBILI_UID = p->value().c_str();
-            Serial.print("BILIBILI_UID set to: "); 
-            Serial.println(BILIBILI_UID);
-            writeFile(LittleFS, BILIBILI_UIDPath, BILIBILI_UID.c_str());
-          }                    
-
-          if (p->name() == PARAM_INPUT_9) {
-            BILIBILI_UID = p->value().c_str();
-            Serial.print("intBright set to: "); 
-            Serial.println(intBright);
-            writeFile(LittleFS, intBrightPath, intBright.c_str());
-          }
-          
-          //Serial.printf("POST[%s]: %s\n", p->name().c_str(), p->value().c_str());
-        }
-      }
       restart = true;
-      
-      //request->send(200, "text/plain", "Done. ESP will restart, connect to your router and go to IP address: " + ip);
-      request->send(200, "text/html",  "<html><meta http-equiv='Content-Type' content='text/html; charset=UTF-8'/><body>写入完毕，重启中，修改后的IP为：<a href='http://"+ip+"'>"+ip+"</a>点击直达</body></html>");
     });
     server.begin();
   }
-
 
   ws.onEvent(onEventHandle); // 绑定回调函数
   server.addHandler(&ws);    // 将WebSocket添加到服务器中
   server.on("/ws", HTTP_GET, handleRoot); //注册链接"/"与对应回调函数
   server.begin(); //启动服务器
   delay(1000);
-  ws.textAll("websocket"); // 向所有建立连接的客户端发送数据
+  ws.textAll("websocket server On"); // 向所有建立连接的客户端发送数据
+
+  //
+  irrecv.enableIRIn(); // 启动红外接收器
+
+
 }
 
 void loop() {
@@ -700,6 +291,7 @@ void loop() {
     ESP.restart();
   }
   
+  //正式运行这里会执行的
   if(canTest==1){
     //Serial.println("runing version 1.0.0");
     delay(1000);
@@ -715,9 +307,12 @@ void loop() {
     oledRun = 0;
   }
 
+  /*测试开始*/
+  if (irrecv.decode(&results)) { // 如果接收到了红外信号
+    Serial.println(results.value, HEX); // 输出红外信号的值（16 进制格式）
+    irrecv.resume(); // 继续接收下一个红外信号
 
-  /*测试开始
-
+    ws.textAll("按键编码:"+String(results.value));
+  }
   /*测试结束*/
-  /**/
 }

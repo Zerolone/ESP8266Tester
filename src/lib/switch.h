@@ -1,9 +1,9 @@
-#ifndef SWITCH_H  
-#define SWITCH_H  
+void switchTest(String pin, String on) {
+  pinMode(pin.toInt(), OUTPUT);
 
-#include <Arduino.h>
-
-void switchTest(String pin, String on);
-  
-  
-#endif
+  if (on == "0"){
+    digitalWrite(pin.toInt(), LOW);
+  }else{
+    digitalWrite(pin.toInt(), HIGH);
+  }
+} 
