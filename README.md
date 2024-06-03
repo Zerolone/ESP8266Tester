@@ -12,7 +12,7 @@
 
 ### 5、OLED显示，显示中文
 
-## 下面是deepl翻译的英文
+## 下面是机翻(deepl)的英文
 ----
 ## Here's the English translation by deepl
 
