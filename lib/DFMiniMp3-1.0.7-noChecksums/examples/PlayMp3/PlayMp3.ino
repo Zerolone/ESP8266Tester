@@ -1,4 +1,13 @@
-#include "Arduino.h"
+// this example will play a track and then 
+// every five seconds play another track
+//
+// it expects the sd card to contain these three mp3 files
+// but doesn't care whats in them
+//
+// sd:/mp3/0001.mp3
+// sd:/mp3/0002.mp3
+// sd:/mp3/0003.mp3
+
 #include <SoftwareSerial.h>
 #include <DFMiniMp3.h>
 
@@ -53,24 +62,21 @@ public:
 // instance a DFMiniMp3 object, 
 // defined with the above notification class and the hardware serial class
 //
-//DFMiniMp3<HardwareSerial, Mp3Notify> mp3(Serial1);
+DFMiniMp3<HardwareSerial, Mp3Notify> mp3(Serial1);
 
 // Some arduino boards only have one hardware serial port, so a software serial port is needed instead.
 // comment out the above definition and uncomment these lines
-SoftwareSerial secondarySerial(D5, D6); // RX, TX
-DFMiniMp3<SoftwareSerial, Mp3Notify> mp3(secondarySerial);
+//SoftwareSerial secondarySerial(10, 11); // RX, TX
+//DFMiniMp3<SoftwareSerial, Mp3Notify> mp3(secondarySerial);
 
 void setup() 
 {
-  
   Serial.begin(115200);
 
   Serial.println("initializing...");
   
   mp3.begin();
-  mp3.reset(); 
-  
-  // show some properties and set the volume
+
   uint16_t volume = mp3.getVolume();
   Serial.print("volume ");
   Serial.println(volume);
@@ -79,19 +85,37 @@ void setup()
   uint16_t count = mp3.getTotalTrackCount(DfMp3_PlaySource_Sd);
   Serial.print("files ");
   Serial.println(count);
-
-  uint16_t mode = mp3.getPlaybackMode();
-  Serial.print("playback mode ");
-  Serial.println(mode);
   
   Serial.println("starting...");
+}
+
+void waitMilliseconds(uint16_t msWait)
+{
+  uint32_t start = millis();
   
-  mp3.playRandomTrackFromAll(); // random of all folders on sd
+  while ((millis() - start) < msWait)
+  {
+    // calling mp3.loop() periodically allows for notifications 
+    // to be handled without interrupts
+    mp3.loop(); 
+    delay(1);
+  }
 }
 
 void loop() 
 {
-  // calling mp3.loop() periodically allows for notifications 
-  // to be handled without interrupts
-  mp3.loop();
+  Serial.println("track 1"); 
+  mp3.playMp3FolderTrack(1);  // sd:/mp3/0001.mp3
+  
+  waitMilliseconds(5000);
+  
+  Serial.println("track 2"); 
+  mp3.playMp3FolderTrack(2); // sd:/mp3/0002.mp3
+  
+  waitMilliseconds(5000);
+  
+  Serial.println("track 3");
+  mp3.playMp3FolderTrack(3); // sd:/mp3/0002.mp3
+  
+  waitMilliseconds(5000); 
 }

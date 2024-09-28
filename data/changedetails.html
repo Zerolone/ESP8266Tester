@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>E-hymn</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" href="pius.png" type="image/x-icon" />
+    <style>
+
+      input{
+        margin: 5px;
+      }
+    </style>
+  </head>
+
+  <body onload="get_pass()">
+    <main>
+      <section>
+        <div class="header">
+          <img src="/pius.png" href="#default" class="logo"></img>
+          <div class="header-right">
+            <a  href="/">Home</a>
+            <a  href="inputs.html">Controls</a>
+            <a class="active" href="changedetails.html">Change password</a>
+          </div>
+        </div>
+        <form action="/details" onsubmit="return check_psw(this)">
+          <input type="text" name="ssid" placeholder="new device name" required/>
+
+          <input
+            type="password"
+            name="old-pass"
+            id="old-pass"
+            placeholder="old password"
+            required
+          />
+          <input
+            type="password"
+            name="new-pass"
+            id="new-pass"
+            placeholder="new password"
+            required
+          />
+          <input type="submit" id="submit-button"/>
+        </form>
+      </section>
+    </main>
+
+    <script>
+      // make request to get old password
+      var xhttp = new XMLHttpRequest();
+
+      let CurrentPassword;
+     
+      function get_pass() {
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            CurrentPassword = JSON.parse(this.responseText)["pass"];
+            console.log(CurrentPassword);
+          }
+        };
+        xhttp.open("POST", "get_pass", true);
+        xhttp.send();
+        console.log("request successful");
+      }
+      
+        function check_psw(form){
+              if (String(document.getElementById("old-pass").value) == String(CurrentPassword)){
+                console.log(CurrentPassword);
+      alert("password matched");
+      return true;
+      
+              }
+              else{
+              
+                alert("password mismatched");
+                return false;
+              }
+              console.log("password checked")
+            }
+    </script>
+  </body>
+</html>

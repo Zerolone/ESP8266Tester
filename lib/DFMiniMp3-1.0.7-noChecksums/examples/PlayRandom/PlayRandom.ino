@@ -1,4 +1,7 @@
-#include "Arduino.h"
+// this example will play a random track from all on the sd 
+//
+// it expects the sd card to contain some mp3 files
+
 #include <SoftwareSerial.h>
 #include <DFMiniMp3.h>
 
@@ -53,12 +56,12 @@ public:
 // instance a DFMiniMp3 object, 
 // defined with the above notification class and the hardware serial class
 //
-//DFMiniMp3<HardwareSerial, Mp3Notify> mp3(Serial1);
+DFMiniMp3<HardwareSerial, Mp3Notify> mp3(Serial1);
 
 // Some arduino boards only have one hardware serial port, so a software serial port is needed instead.
 // comment out the above definition and uncomment these lines
-SoftwareSerial secondarySerial(D5, D6); // RX, TX
-DFMiniMp3<SoftwareSerial, Mp3Notify> mp3(secondarySerial);
+//SoftwareSerial secondarySerial(10, 11); // RX, TX
+//DFMiniMp3<SoftwareSerial, Mp3Notify> mp3(secondarySerial);
 
 void setup() 
 {
